@@ -77,6 +77,8 @@
 
 @implementation TURNSocket
 
+@synthesize sid;
+
 static NSMutableDictionary *existingTurnSockets;
 static NSMutableArray *proxyCandidates;
 
@@ -204,6 +206,8 @@ static NSMutableArray *proxyCandidates;
 		// So an incoming connection from JID clientB@deusty.com/home would be for which turn socket?
 		uuid = [xmppStream generateUUID];
 		
+        sid = [NSString stringWithFormat:@"isi_%@", uuid];
+        
 		// Setup initial state for a client connection
 		state = STATE_INIT;
 		isClient = YES;
@@ -242,7 +246,8 @@ static NSMutableArray *proxyCandidates;
 		// Extract streamhost information from turn request
 		NSXMLElement *query = [iq elementForName:@"query" xmlns:@"http://jabber.org/protocol/bytestreams"];
 		streamhosts = [[query elementsForName:@"streamhost"] mutableCopy];
-		
+		sid = [query attributeStringValueForName:@"sid"];
+        
 		// Configure everything else
 		[self performPostInitSetup];
 	}
@@ -432,7 +437,7 @@ static NSMutableArray *proxyCandidates;
 	// </iq>
 	
 	NSXMLElement *query = [NSXMLElement elementWithName:@"query" xmlns:@"http://jabber.org/protocol/bytestreams"];
-	[query addAttributeWithName:@"sid" stringValue:uuid];
+	[query addAttributeWithName:@"sid" stringValue:sid];
 	[query addAttributeWithName:@"mode" stringValue:@"tcp"];
 	
 	NSUInteger i;
@@ -468,7 +473,7 @@ static NSMutableArray *proxyCandidates;
 	[streamhostUsed addAttributeWithName:@"jid" stringValue:[proxyJID full]];
 	
 	NSXMLElement *query = [NSXMLElement elementWithName:@"query" xmlns:@"http://jabber.org/protocol/bytestreams"];
-	[query addAttributeWithName:@"sid" stringValue:uuid];
+	[query addAttributeWithName:@"sid" stringValue:sid];
 	[query addChild:streamhostUsed];
 	
 	XMPPIQ *iq = [XMPPIQ iqWithType:@"result" to:jid elementID:uuid child:query];
@@ -489,7 +494,7 @@ static NSMutableArray *proxyCandidates;
 	NSXMLElement *activate = [NSXMLElement elementWithName:@"activate" stringValue:[jid full]];
 	
 	NSXMLElement *query = [NSXMLElement elementWithName:@"query" xmlns:@"http://jabber.org/protocol/bytestreams"];
-	[query addAttributeWithName:@"sid" stringValue:uuid];
+	[query addAttributeWithName:@"sid" stringValue:sid];
 	[query addChild:activate];
 	
 	XMPPIQ *iq = [XMPPIQ iqWithType:@"set" to:proxyJID elementID:uuid child:query];
@@ -1116,7 +1121,7 @@ static NSMutableArray *proxyCandidates;
 	XMPPJID *initiatorJID = isClient ? myJID : jid;
 	XMPPJID *targetJID    = isClient ? jid   : myJID;
 	
-	NSString *hashMe = [NSString stringWithFormat:@"%@%@%@", uuid, [initiatorJID full], [targetJID full]];
+	NSString *hashMe = [NSString stringWithFormat:@"%@%@%@", sid, [initiatorJID full], [targetJID full]];
 	NSData *hashRaw = [[hashMe dataUsingEncoding:NSUTF8StringEncoding] sha1Digest];
 	NSData *hash = [[hashRaw hexStringValue] dataUsingEncoding:NSUTF8StringEncoding];
 	

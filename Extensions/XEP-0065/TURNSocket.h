@@ -21,7 +21,11 @@
 	XMPPStream *xmppStream;
 	XMPPJID *jid;
 	NSString *uuid;
-	
+    
+    // The 'sid' attribute specifies the bytestream session identifier. 
+    // The value of this attribute is any character data. This attribute is REQUIRED.
+	NSString *sid;
+    
 	id delegate;
 	dispatch_queue_t delegateQueue;
 	
@@ -47,6 +51,8 @@
 	
 	NSDate *startTime, *finishTime;
 }
+
+@property (nonatomic, readonly) NSString *sid;
 
 + (BOOL)isNewStartTURNRequest:(XMPPIQ *)iq;
 
